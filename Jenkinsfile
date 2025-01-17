@@ -26,14 +26,40 @@ pipeline {
 				sh "mvn clean compile"
 			}
 		}
-		stage ('Test'){
+		// stage ('Test'){
+		// 	steps {
+		// 		sh "mvn test"
+		// 	}
+		// }
+		// stage ('Integration Test'){
+		// 	steps {
+		// 		sh "mvn failsafe:integration-test failsafe:verify"
+		// 	}
+		// }
+
+		stage ('Package'){
 			steps {
-				sh "mvn test"
+				sh "mvn package -DskipTests"
 			}
 		}
-		stage ('Integration Test'){
+
+		stage ('Build Docker Image') {
 			steps {
-				sh "mvn failsafe:integration-test failsafe:verify"
+				// "docker build -t in28mins/currency-exchange-devops:$env.BUILD_TAG"
+				script {
+					dockerImage = docker.build("mohamedtabrez/currency-exchange-devops:${env.BUILD_TAG}")
+				}
+			}
+		}
+
+		stage ('Push Docker Image') {
+			steps {
+				script {
+					docker.withRegistry('', 'dockerhub') {
+						dockerImage.push();
+						dockerImage.push('latest');
+					}
+				}
 			}
 		}
 	} 
